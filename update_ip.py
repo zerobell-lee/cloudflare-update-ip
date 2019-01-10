@@ -23,6 +23,13 @@ if len(sys.argv) == 1:
     else:
         print('Current Ip is not defined. Use new Ip as current Ip.')
         current_ip = new_ip
+        config['current_ip'] = current_ip
+        try:
+            fp = open(configdir + '/config.json', 'w')
+            json.dump(config, fp)
+            fp.close()
+        except PermissionError:
+            print('Permission Error Occured. Cannot write %s/config.json'%configdir)
 
     if new_ip != current_ip:
         ses = requests.session()
