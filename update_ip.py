@@ -9,31 +9,20 @@ configdir = os.path.dirname(os.path.realpath(__file__))
 if len(sys.argv) == 1:
 
     try:
-        fp1 = open(configdir + '/config.json', 'r')
-        config = json.load(fp1)
-        fp1.close()
+        fp = open(configdir + '/config.json', 'r')
+        config = json.load(fp)
+        fp.close()
     except FileNotFoundError:
         print('Cannot find %s/config.json \nPlease make your own config.json from config-sample.json'%configdir)
         exit(-1)
 
-    ipdir = config['ipdir']
-    new_ip = requests.get('http://ifconfig.co/ip').content.decode('utf-8')
+    new_ip = requests.get('http://ifconfig.co/ip').content.decode('utf-8')[0:-1]
 
-    try:
-        fp1 = open(ipdir + '/current_ip.txt', 'r')
-        current_ip = fp1.read()
-        fp1.close()
-    except FileNotFoundError:
-        print('%s/current_ip.txt Not Found. Creating new current_ip.txt'%ipdir)
-        try:
-            current_ip = new_ip
-            fp2 = open(ipdir + '/current_ip.txt', 'w')
-            fp2.write(new_ip)
-            fp2.close()
-            print('Wrote %s/current_ip.txt'%ipdir)
-        except PermissionError:
-            print('Cannot Write! Please check permission settings')
-            exit(-1)
+    if 'current_ip' in config.keys():
+        current_ip = config['current_ip']
+    else:
+        print('Current Ip is not defined. Use new Ip as current Ip.')
+        current_ip = new_ip
 
     if new_ip != current_ip:
         ses = requests.session()
@@ -45,10 +34,18 @@ if len(sys.argv) == 1:
                 id_list.append({ 'id' : e['id'], 'type' : e['type'], 'name': e['name'], 'content' : e['content']})
         for e in id_list:
             result = ses.put('https://api.cloudflare.com/client/v4/zones/%s/dns_records/%s' % (config['zone'], e['id']),
-                                '{"type": "%s", "name": "%s", "content": "%s"}' % (e['type'], e['name'], new_ip[0:-1]))
+                                '{"type": "%s", "name": "%s", "content": "%s"}' % (e['type'], e['name'], new_ip))
             print(result.content.decode('utf8'))
         ses.close()
-        with open(ipdir + '/current_ip.txt', 'w') as fp:
-            fp.write(new_ip)
+
+        config['current_ip'] = new_ip
+
+        try:
+            fp = open(configdir + '/config.json', 'w')
+            json.dump(config, fp)
+            fp.close()
+        except PermissionError:
+            print('Permission Error Occured. Cannot write %s/config.json.'%configdir)
+
 
 
