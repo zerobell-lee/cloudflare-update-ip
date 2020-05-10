@@ -41,7 +41,7 @@ if len(sys.argv) == 1:
                 id_list.append({ 'id' : e['id'], 'type' : e['type'], 'name': e['name'], 'content' : e['content']})
         for e in id_list:
             result = ses.put('https://api.cloudflare.com/client/v4/zones/%s/dns_records/%s' % (config['zone'], e['id']),
-                                '{"type": "%s", "name": "%s", "content": "%s"}' % (e['type'], e['name'], new_ip))
+                                data='{"type": "%s", "name": "%s", "content": "%s"}' % (e['type'], e['name'], new_ip))
             print(result.content.decode('utf8'))
         ses.close()
 
